@@ -3,12 +3,25 @@ from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
 
+# Create engine with SSL support for production (Aiven/Render)
+connect_args = {}
+db_url = settings.database_url
+
+if "sslmode=require" in db_url:
+    # asyncpg uses 'ssl' instead of 'sslmode'
+    if "?" in db_url:
+        base_url, query = db_url.split("?", 1)
+        params = [p for p in query.split("&") if not p.startswith("sslmode=")]
+        db_url = f"{base_url}?{'&'.join(params)}" if params else base_url
+    connect_args["ssl"] = True
+
 engine = create_async_engine(
-    settings.database_url,
+    db_url,
     echo=settings.debug,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = async_sessionmaker(
