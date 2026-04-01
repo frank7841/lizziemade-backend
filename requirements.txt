@@ -19,7 +19,7 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 
 # Payments
-stripe==9.5.0
+# Using direct API calls with httpx for Paystack
 
 # File uploads / images
 cloudinary==1.40.0
