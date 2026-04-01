@@ -35,7 +35,13 @@ class RefreshRequest(BaseModel):
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", 
+    response_model=TokenResponse, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Register New User",
+    description="Creates a new user account. If the role is 'seller', a corresponding seller profile is also created. Returns initial JWT tokens."
+)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check duplicate email
     existing = await db.execute(select(User).where(User.email == payload.email))
@@ -70,7 +76,12 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, role=user.role)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login", 
+    response_model=TokenResponse,
+    summary="User Login",
+    description="Authenticates a user via email and password (OAuth2 compatible) and returns access and refresh tokens."
+)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
@@ -86,7 +97,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, role=user.role)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh", 
+    response_model=TokenResponse,
+    summary="Refresh Access Token",
+    description="Issues a new access token and a new refresh token using a valid, non-expired refresh token."
+)
 async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
         data = decode_token(payload.refresh_token)

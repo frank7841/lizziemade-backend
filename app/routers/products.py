@@ -65,7 +65,12 @@ class ProductOut(BaseModel):
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=list[ProductOut])
+@router.get(
+    "/", 
+    response_model=list[ProductOut],
+    summary="List All Products",
+    description="Retrieves a paginated list of all active products with support for searching and filtering by category, price, and customizability."
+)
 async def list_products(
     search: Optional[str] = Query(None),
     category: Optional[ProductCategory] = Query(None),
@@ -108,7 +113,13 @@ async def get_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     return product
 
 
-@router.post("/", response_model=ProductOut, status_code=201)
+@router.post(
+    "/", 
+    response_model=ProductOut, 
+    status_code=201,
+    summary="Create New Product",
+    description="Allows an authenticated seller to create a new product listing, including optional variants (size, colour, etc.)."
+)
 async def create_product(
     payload: ProductCreate,
     current_user: User = Depends(get_current_seller),

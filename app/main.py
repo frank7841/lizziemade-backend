@@ -4,11 +4,27 @@ from app.config import settings
 from app.routers import auth, products, orders, custom_orders, shipments, payments
 
 app = FastAPI(
-    title=settings.app_name,
-    description="LizzieMade Crochet Marketplace REST API",
+    title="LizzieMade API",
+    description="""
+    ## LizzieMade Crochet Marketplace API
+    
+    The backend for the LizzieMade marketplace, a platform for artisans to sell high-quality, handmade crochet products.
+    
+    ### Features:
+    * **Auth**: Secure JWT-based authentication
+    * **Products**: Management for artisan crochet pieces
+    * **Orders**: Product purchase and custom order flows
+    * **Payments**: Regional payment processing via Paystack
+    * **Shipments**: Comprehensive tracking for handmade goods
+    """,
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    contact={
+        "name": "LizzieMade Technical Team",
+        "url": "https://lizziemade.com/tech",
+        "email": "dev@lizziemade.com",
+    },
 )
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
