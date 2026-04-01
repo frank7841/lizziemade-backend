@@ -1,0 +1,40 @@
+edition: 3.0.0
+name: lizziemade-backend
+
+vars:
+  region: cn-hangzhou
+  service: lizziemade-service
+
+resources:
+  backend_func:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: backend-api
+      description: 'LizzieMade Crochet Marketplace Backend'
+      runtime: custom-container
+      code:
+        imageUri: registry.cn-hangzhou.aliyuncs.com/${env(ACR_NAMESPACE)}/backend-api:${env(IMAGE_TAG)}
+      customContainerConfig:
+        port: 9000
+      memorySize: 512
+      timeout: 60
+      instanceConcurrency: 5
+      instanceLifecycleConfig:
+        preFreeze:
+          timeout: 3
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+      environmentVariables:
+        ENV: production
+        # Database and other secrets should be set in Function Compute console
+        # or passed via environment variables in s.yaml if safe.

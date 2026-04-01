@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 from app.database import get_db
-from app.models.product import Product, ProductVariant, ProductCategory
+from app.models.product import Product, ProductVariant, ProductCategory, DifficultyLevel
 from app.models.seller import Seller
 from app.dependencies import get_current_user, get_current_seller
 from app.models.user import User
@@ -34,6 +34,11 @@ class ProductCreate(BaseModel):
     stock: int = 1
     variants: list[VariantCreate] = []
 
+    # New Fields
+    is_digital: bool = False
+    difficulty_level: Optional[DifficultyLevel] = None
+    file_url: Optional[str] = None
+
 
 class ProductUpdate(BaseModel):
     title: str | None = None
@@ -42,6 +47,9 @@ class ProductUpdate(BaseModel):
     stock: int | None = None
     is_active: bool | None = None
     tags: list[str] | None = None
+    is_digital: bool | None = None
+    difficulty_level: Optional[DifficultyLevel] = None
+    file_url: Optional[str] = None
 
 
 class ProductOut(BaseModel):
@@ -58,6 +66,9 @@ class ProductOut(BaseModel):
     rating: float
     review_count: int
     seller_id: uuid.UUID
+    is_digital: bool
+    difficulty_level: Optional[DifficultyLevel] = None
+    file_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -142,6 +153,9 @@ async def create_product(
         is_customizable=payload.is_customizable,
         stock=payload.stock,
         images=[],
+        is_digital=payload.is_digital,
+        difficulty_level=payload.difficulty_level,
+        file_url=payload.file_url,
     )
     db.add(product)
     await db.flush()

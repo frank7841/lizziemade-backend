@@ -18,6 +18,14 @@ class ProductCategory(str, enum.Enum):
     other = "other"
 
 
+class DifficultyLevel(str, enum.Enum):
+    beginner = "beginner"
+    easy = "easy"
+    intermediate = "intermediate"
+    advanced = "advanced"
+    expert = "expert"
+
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -36,6 +44,12 @@ class Product(Base):
     stock: Mapped[int] = mapped_column(Integer, default=1)
     rating: Mapped[float] = mapped_column(Float, default=0.0)
     review_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Pattern/Digital Specific
+    is_digital: Mapped[bool] = mapped_column(Boolean, default=False)
+    difficulty_level: Mapped[DifficultyLevel | None] = mapped_column(SAEnum(DifficultyLevel), nullable=True)
+    file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # URL for digital patterns
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

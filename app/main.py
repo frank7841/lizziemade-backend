@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from mangum import Mangum
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth, products, orders, custom_orders, shipments, payments
+from app.routers import auth, products, orders, custom_orders, shipments, payments, admin
 
 app = FastAPI(
     title="LizzieMade API",
@@ -44,6 +45,7 @@ app.include_router(orders.router, prefix=PREFIX)
 app.include_router(custom_orders.router, prefix=PREFIX)
 app.include_router(shipments.router, prefix=PREFIX)
 app.include_router(payments.router, prefix=PREFIX)
+app.include_router(admin.router, prefix=PREFIX)
 
 
 @app.get("/", tags=["Health"])
@@ -54,3 +56,6 @@ async def root():
 @app.get("/health", tags=["Health"])
 async def health():
     return {"status": "healthy"}
+
+# Function Compute HTTP trigger handler
+handler = Mangum(app, lifespan="off")
