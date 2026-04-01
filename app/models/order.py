@@ -26,8 +26,8 @@ class Order(Base):
     subtotal: Mapped[float] = mapped_column(Float, nullable=False)
     shipping_fee: Mapped[float] = mapped_column(Float, default=0.0)
     total: Mapped[float] = mapped_column(Float, nullable=False)
-    stripe_payment_intent: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    stripe_charge_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    payment_reference: Mapped[str | None] = mapped_column(String(200), nullable=True) # Paystack transaction reference
+    payment_id: Mapped[str | None] = mapped_column(String(200), nullable=True)        # Paystack external transaction ID
     shipping_address: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {name, line1, line2, city, country, postal_code}
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -40,14 +40,14 @@ class OrderCreate(BaseModel):
 
 
 class OrderOut(BaseModel):
-    id: uuid.UUID
-    status: OrderStatus
-    subtotal: float
-    shipping_fee: float
-    total: float
-    shipping_address: Optional[dict]
-    stripe_payment_intent: Optional[str]
-    created_at: str
+    id: uuid.UUID = Field(..., description="Unique identifier for the order.")
+    status: OrderStatus = Field(..., description="Current status of the order.")
+    subtotal: float = Field(..., description="Sum of all item prices in the order.")
+    shipping_fee: float = Field(..., description="Cost of shipping for this order.")
+    total: float = Field(..., description="Grand total including shipping.")
+    shipping_address: Optional[dict] = Field(None, description="Detailed shipping destination.")
+    payment_reference: Optional[str] = Field(None, description="The payment reference (from Paystack).")
+    created_at: datetime = Field(..., description="Timestamp when the order was placed.")
 
     class Config:
         from_attributes = True
@@ -55,7 +55,13 @@ class OrderOut(BaseModel):
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
-@router.post("/", response_model=OrderOut, status_code=201)
+@router.post(
+    "/", 
+    response_model=OrderOut, 
+    status_code=201,
+    summary="Create New Order",
+    description="Creates a new order from a list of products and a shipping address. Initial status is 'pending'."
+)
 async def create_order(
     payload: OrderCreate,
     current_user: User = Depends(get_current_user),
@@ -105,7 +111,12 @@ async def create_order(
     return order
 
 
-@router.get("/", response_model=list[OrderOut])
+@router.get(
+    "/", 
+    response_model=list[OrderOut],
+    summary="List My Orders",
+    description="Retrieves a list of all orders belonging to the authenticated user."
+)
 async def list_my_orders(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Order).where(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()))
     return result.scalars().all()

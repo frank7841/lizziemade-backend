@@ -19,10 +19,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    # Stripe
-    stripe_secret_key: str = ""
-    stripe_webhook_secret: str = ""
-    stripe_publishable_key: str = ""
+    # Paystack
+    paystack_secret_key: str = ""
+    paystack_callback_url: str = ""
 
     # Cloudinary
     cloudinary_cloud_name: str = ""
