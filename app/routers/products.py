@@ -50,7 +50,7 @@ class ProductCreate(BaseModel):
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
     seller_id: Optional[uuid.UUID] = None  # Admin only
-    dimensions: Optional[dict] = None  # {"length": 10, "width": 5, "unit": "cm"}
+    dimensions: Optional[dict] = None  # {"length": 10, "width": 5, "height": 8, "unit": "cm"}
 
 
 class ProductUpdate(BaseModel):
