@@ -122,7 +122,12 @@ class BecomeSellerRequest(BaseModel):
     shop_name: str
 
 
-@router.post("/become-seller", status_code=201)
+@router.post(
+    "/become-seller", 
+    status_code=201,
+    summary="Become a Seller",
+    description="Creates a personal seller profile for the authenticated user (including Admins), enabling them to list their own products."
+)
 async def become_seller(
     payload: BecomeSellerRequest,
     current_user: User = Depends(get_current_user),

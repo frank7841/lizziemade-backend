@@ -8,7 +8,11 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/uploads", tags=["Uploads"])
 
-@router.post("/image")
+@router.post(
+    "/image",
+    summary="Upload Product Image",
+    description="Uploads an image file to Cloudinary and returns the secure URL and public ID for storage in the product record."
+)
 async def upload_product_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
@@ -27,7 +31,11 @@ async def upload_product_image(
         logger.error(f"Image upload failed: {e}")
         raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
 
-@router.post("/pattern")
+@router.post(
+    "/pattern",
+    summary="Upload Digital Pattern",
+    description="Uploads a raw file (e.g., a PDF crochet pattern) to Cloudinary and returns the secure URL."
+)
 async def upload_pattern_file(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
