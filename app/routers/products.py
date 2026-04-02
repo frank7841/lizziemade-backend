@@ -7,8 +7,8 @@ import uuid
 from app.database import get_db
 from app.models.product import Product, ProductVariant, ProductCategory, DifficultyLevel
 from app.models.seller import Seller
-from app.dependencies import get_current_user, get_current_seller
-from app.models.user import User
+from app.dependencies import get_current_user, get_current_seller, get_current_seller_or_admin
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -39,6 +39,7 @@ class ProductCreate(BaseModel):
     is_digital: bool = False
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
+    seller_id: Optional[uuid.UUID] = None  # Admin only
 
 
 class ProductUpdate(BaseModel):
@@ -52,6 +53,7 @@ class ProductUpdate(BaseModel):
     is_digital: bool | None = None
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
+    seller_id: Optional[uuid.UUID] = None  # Admin only
 
 
 class ProductOut(BaseModel):
@@ -135,17 +137,27 @@ async def get_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 )
 async def create_product(
     payload: ProductCreate,
-    current_user: User = Depends(get_current_seller),
+    current_user: User = Depends(get_current_seller_or_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    # Get seller profile
-    result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
-    seller = result.scalar_one_or_none()
-    if not seller:
-        raise HTTPException(status_code=404, detail="Seller profile not found")
+    if current_user.role == UserRole.admin:
+        if not payload.seller_id:
+            raise HTTPException(status_code=400, detail="seller_id is required for admin product creation")
+        seller_id = payload.seller_id
+        # Verify seller exists
+        seller_result = await db.execute(select(Seller).where(Seller.id == seller_id))
+        if not seller_result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Target seller not found")
+    else:
+        # Get seller profile for current user
+        result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
+        seller = result.scalar_one_or_none()
+        if not seller:
+            raise HTTPException(status_code=404, detail="Seller profile not found")
+        seller_id = seller.id
 
     product = Product(
-        seller_id=seller.id,
+        seller_id=seller_id,
         title=payload.title,
         description=payload.description,
         price=payload.price,
@@ -175,7 +187,7 @@ async def create_product(
 async def update_product(
     product_id: uuid.UUID,
     payload: ProductUpdate,
-    current_user: User = Depends(get_current_seller),
+    current_user: User = Depends(get_current_seller_or_admin),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Product).where(Product.id == product_id))
@@ -183,11 +195,12 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Verify ownership
-    seller_result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
-    seller = seller_result.scalar_one_or_none()
-    if not seller or product.seller_id != seller.id:
-        raise HTTPException(status_code=403, detail="Not your product")
+    # Verify ownership or admin status
+    if current_user.role != UserRole.admin:
+        seller_result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
+        seller = seller_result.scalar_one_or_none()
+        if not seller or product.seller_id != seller.id:
+            raise HTTPException(status_code=403, detail="Not your product")
 
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(product, field, value)
@@ -200,7 +213,7 @@ async def update_product(
 @router.delete("/{product_id}", status_code=204)
 async def delete_product(
     product_id: uuid.UUID,
-    current_user: User = Depends(get_current_seller),
+    current_user: User = Depends(get_current_seller_or_admin),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Product).where(Product.id == product_id))
@@ -208,10 +221,11 @@ async def delete_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    seller_result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
-    seller = seller_result.scalar_one_or_none()
-    if not seller or product.seller_id != seller.id:
-        raise HTTPException(status_code=403, detail="Not your product")
+    if current_user.role != UserRole.admin:
+        seller_result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
+        seller = seller_result.scalar_one_or_none()
+        if not seller or product.seller_id != seller.id:
+            raise HTTPException(status_code=403, detail="Not your product")
 
     product.is_active = False  # Soft delete
     await db.commit()
