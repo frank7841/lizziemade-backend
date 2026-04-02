@@ -112,20 +112,30 @@ async def create_order(
     return order
 
 
+from app.models.user import User, UserRole
+
+
 @router.get(
     "/", 
     response_model=list[OrderOut],
-    summary="List My Orders",
-    description="Retrieves a list of all orders belonging to the authenticated user."
+    summary="List Orders",
+    description="Retrieves a list of orders. Admins see all orders; buyers only see their own."
 )
-async def list_my_orders(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Order).where(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()))
+async def list_orders(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.role == UserRole.admin:
+        result = await db.execute(select(Order).order_by(Order.created_at.desc()))
+    else:
+        result = await db.execute(select(Order).where(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()))
     return result.scalars().all()
 
 
 @router.get("/{order_id}", response_model=OrderOut)
 async def get_order(order_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Order).where(Order.id == order_id, Order.buyer_id == current_user.id))
+    query = select(Order).where(Order.id == order_id)
+    if current_user.role != UserRole.admin:
+        query = query.where(Order.buyer_id == current_user.id)
+    
+    result = await db.execute(query)
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -134,12 +144,18 @@ async def get_order(order_id: uuid.UUID, current_user: User = Depends(get_curren
 
 @router.patch("/{order_id}/cancel", response_model=OrderOut)
 async def cancel_order(order_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Order).where(Order.id == order_id, Order.buyer_id == current_user.id))
+    query = select(Order).where(Order.id == order_id)
+    if current_user.role != UserRole.admin:
+        query = query.where(Order.buyer_id == current_user.id)
+        
+    result = await db.execute(query)
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    
     if order.status not in [OrderStatus.pending]:
         raise HTTPException(status_code=400, detail="Only pending orders can be cancelled")
+    
     order.status = OrderStatus.cancelled
     await db.commit()
     await db.refresh(order)
