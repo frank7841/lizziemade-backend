@@ -1,3 +1,4 @@
+import ssl
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
@@ -13,7 +14,12 @@ if "sslmode=require" in db_url:
         base_url, query = db_url.split("?", 1)
         params = [p for p in query.split("&") if not p.startswith("sslmode=")]
         db_url = f"{base_url}?{'&'.join(params)}" if params else base_url
-    connect_args["ssl"] = True
+    
+    # Create insecure SSL context to handle self-signed certs (common on Aiven)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ctx
 
 engine = create_async_engine(
     db_url,
