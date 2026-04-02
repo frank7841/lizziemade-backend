@@ -7,15 +7,18 @@ import enum
 from app.database import Base
 
 
-class ProductCategory(str, enum.Enum):
-    amigurumi = "amigurumi"
-    clothing = "clothing"
-    accessories = "accessories"
-    home_decor = "home_decor"
-    bags = "bags"
-    baby_items = "baby_items"
-    patterns = "patterns"
-    other = "other"
+class Category(Base):
+    __tablename__ = "categories"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    products: Mapped[list["Product"]] = relationship("Product", back_populates="category")
+
+    def __repr__(self) -> str:
+        return f"<Category {self.name}>"
 
 
 class DifficultyLevel(str, enum.Enum):
@@ -34,7 +37,7 @@ class Product(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
-    category: Mapped[ProductCategory] = mapped_column(SAEnum(ProductCategory), nullable=False)
+    category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)          # ["soft", "handmade", ...]
     images: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)         # [{"url": ..., "public_id": ...}]
     materials: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)      # ["cotton", "acrylic"]
@@ -55,6 +58,7 @@ class Product(Base):
 
     # Relationships
     seller: Mapped["Seller"] = relationship("Seller", back_populates="products")
+    category: Mapped["Category"] = relationship("Category", back_populates="products")
     variants: Mapped[list["ProductVariant"]] = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
     order_items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="product")
     reviews: Mapped[list["Review"]] = relationship("Review", back_populates="product")

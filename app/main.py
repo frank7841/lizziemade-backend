@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from mangum import Mangum
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth, products, orders, custom_orders, shipments, payments, admin, uploads
+from app.routers import auth, products, orders, custom_orders, shipments, payments, admin, uploads, categories
 import traceback
 import logging
 from contextlib import asynccontextmanager
@@ -84,6 +84,7 @@ app.include_router(shipments.router, prefix=PREFIX)
 app.include_router(payments.router, prefix=PREFIX)
 app.include_router(admin.router, prefix=PREFIX)
 app.include_router(uploads.router, prefix=PREFIX)
+app.include_router(categories.router, prefix=PREFIX)
 
 
 @app.get("/", tags=["Health"])

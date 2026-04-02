@@ -1,4 +1,9 @@
+import sys
+import os
 from logging.config import fileConfig
+
+# Add the project root to sys.path
+sys.path.append(os.getcwd())
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.config import settings

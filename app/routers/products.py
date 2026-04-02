@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 from app.database import get_db
-from app.models.product import Product, ProductVariant, ProductCategory, DifficultyLevel
+from app.models.product import Product, ProductVariant, Category, DifficultyLevel
 from app.models.seller import Seller
 from app.dependencies import get_current_user, get_current_seller, get_current_seller_or_admin
 from app.models.user import User, UserRole
@@ -14,6 +14,16 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
+
+class CategoryOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 
 class VariantCreate(BaseModel):
     colour: str | None = None
@@ -27,7 +37,7 @@ class ProductCreate(BaseModel):
     title: str
     description: str
     price: float
-    category: ProductCategory
+    category_id: uuid.UUID
     tags: list[str] = []
     materials: list[str] = []
     is_customizable: bool = False
@@ -46,6 +56,7 @@ class ProductUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     price: float | None = None
+    category_id: uuid.UUID | None = None
     stock: int | None = None
     is_active: bool | None = None
     tags: list[str] | None = None
@@ -61,7 +72,8 @@ class ProductOut(BaseModel):
     title: str
     description: str
     price: float
-    category: str
+    category_id: uuid.UUID | None
+    category: Optional[CategoryOut] = None
     tags: list
     images: list
     materials: list
@@ -88,7 +100,8 @@ class ProductOut(BaseModel):
 )
 async def list_products(
     search: Optional[str] = Query(None),
-    category: Optional[ProductCategory] = Query(None),
+    category_slug: Optional[str] = Query(None),
+    category_id: Optional[uuid.UUID] = Query(None),
     min_price: Optional[float] = Query(None),
     max_price: Optional[float] = Query(None),
     is_customizable: Optional[bool] = Query(None),
@@ -105,8 +118,10 @@ async def list_products(
                 Product.description.ilike(f"%{search}%"),
             )
         )
-    if category:
-        query = query.where(Product.category == category)
+    if category_id:
+        query = query.where(Product.category_id == category_id)
+    elif category_slug:
+        query = query.join(Product.category).where(Category.slug == category_slug)
     if min_price is not None:
         query = query.where(Product.price >= min_price)
     if max_price is not None:
@@ -156,12 +171,17 @@ async def create_product(
             raise HTTPException(status_code=404, detail="Seller profile not found")
         seller_id = seller.id
 
+    # Verify category exists
+    cat_result = await db.execute(select(Category).where(Category.id == payload.category_id))
+    if not cat_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Category not found")
+
     product = Product(
         seller_id=seller_id,
         title=payload.title,
         description=payload.description,
         price=payload.price,
-        category=payload.category,
+        category_id=payload.category_id,
         tags=payload.tags,
         materials=payload.materials,
         is_customizable=payload.is_customizable,
