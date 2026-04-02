@@ -52,6 +52,8 @@ class Product(Base):
     is_digital: Mapped[bool] = mapped_column(Boolean, default=False)
     difficulty_level: Mapped[DifficultyLevel | None] = mapped_column(SAEnum(DifficultyLevel), nullable=True)
     file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # URL for digital patterns
+    
+    dimensions: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {"length": 10, "width": 5, "unit": "cm"}
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

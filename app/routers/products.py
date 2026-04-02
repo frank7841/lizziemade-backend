@@ -50,6 +50,7 @@ class ProductCreate(BaseModel):
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
     seller_id: Optional[uuid.UUID] = None  # Admin only
+    dimensions: Optional[dict] = None  # {"length": 10, "width": 5, "unit": "cm"}
 
 
 class ProductUpdate(BaseModel):
@@ -65,6 +66,7 @@ class ProductUpdate(BaseModel):
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
     seller_id: Optional[uuid.UUID] = None  # Admin only
+    dimensions: Optional[dict] = None
 
 
 class ProductOut(BaseModel):
@@ -85,6 +87,7 @@ class ProductOut(BaseModel):
     is_digital: bool
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
+    dimensions: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -190,6 +193,7 @@ async def create_product(
         is_digital=payload.is_digital,
         difficulty_level=payload.difficulty_level,
         file_url=payload.file_url,
+        dimensions=payload.dimensions,
     )
     db.add(product)
     await db.flush()

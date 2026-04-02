@@ -24,6 +24,9 @@ class CustomOrderCreate(BaseModel):
     size_notes: Optional[str] = None
     desired_deadline: Optional[datetime] = None
     buyer_budget: Optional[float] = None
+    reference_product_id: Optional[uuid.UUID] = None
+    dimensions: Optional[dict] = None
+    attachments: Optional[list[dict]] = None
 
 
 class QuotePayload(BaseModel):
@@ -42,6 +45,9 @@ class CustomOrderOut(BaseModel):
     quoted_price: Optional[float]
     seller_notes: Optional[str]
     desired_deadline: Optional[datetime]
+    reference_product_id: Optional[uuid.UUID]
+    dimensions: Optional[dict]
+    attachments: Optional[list]
     created_at: datetime
 
     class Config:
@@ -70,6 +76,9 @@ async def create_custom_order(
         size_notes=payload.size_notes,
         desired_deadline=payload.desired_deadline,
         buyer_budget=payload.buyer_budget,
+        reference_product_id=payload.reference_product_id,
+        dimensions=payload.dimensions,
+        attachments=payload.attachments or [],
     )
     db.add(order)
     await db.commit()
