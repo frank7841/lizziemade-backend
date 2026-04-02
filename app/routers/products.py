@@ -140,19 +140,19 @@ async def create_product(
     current_user: User = Depends(get_current_seller_or_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    if current_user.role == UserRole.admin:
-        if not payload.seller_id:
-            raise HTTPException(status_code=400, detail="seller_id is required for admin product creation")
+    if current_user.role == UserRole.admin and payload.seller_id:
         seller_id = payload.seller_id
         # Verify seller exists
         seller_result = await db.execute(select(Seller).where(Seller.id == seller_id))
         if not seller_result.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Target seller not found")
     else:
-        # Get seller profile for current user
+        # Get seller profile for current user (seller or admin-acting-as-seller)
         result = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
         seller = result.scalar_one_or_none()
         if not seller:
+            if current_user.role == UserRole.admin:
+                raise HTTPException(status_code=400, detail="seller_id is required for admin product creation if no personal seller profile exists")
             raise HTTPException(status_code=404, detail="Seller profile not found")
         seller_id = seller.id
 

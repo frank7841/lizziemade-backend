@@ -60,7 +60,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     db.add(user)
     await db.flush()  # Get user.id before commit
 
-    if payload.role == UserRole.seller:
+    if payload.role in [UserRole.seller, UserRole.admin] and payload.shop_name:
         # Ensure shop_name is unique
         existing_shop = await db.execute(select(Seller).where(Seller.shop_name == payload.shop_name))
         if existing_shop.scalar_one_or_none():
@@ -97,12 +97,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, role=user.role)
 
 
-@router.post(
-    "/refresh", 
-    response_model=TokenResponse,
-    summary="Refresh Access Token",
-    description="Issues a new access token and a new refresh token using a valid, non-expired refresh token."
-)
+@router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
         data = decode_token(payload.refresh_token)
@@ -115,8 +110,39 @@ async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="User found")
 
     access_token = create_access_token({"sub": str(user.id)})
     new_refresh = create_refresh_token({"sub": str(user.id)})
     return TokenResponse(access_token=access_token, refresh_token=new_refresh, role=user.role)
+
+
+class BecomeSellerRequest(BaseModel):
+    shop_name: str
+
+
+@router.post("/become-seller", status_code=201)
+async def become_seller(
+    payload: BecomeSellerRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Check if already a seller profile
+    existing = await db.execute(select(Seller).where(Seller.user_id == current_user.id))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="User already has a seller profile")
+
+    # Ensure shop_name unique
+    existing_shop = await db.execute(select(Seller).where(Seller.shop_name == payload.shop_name))
+    if existing_shop.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Shop name already taken")
+
+    seller = Seller(user_id=current_user.id, shop_name=payload.shop_name)
+    db.add(seller)
+    
+    # If role was buyer, maybe upgrade to seller? 
+    # But user said "ideally make an admin a seller as well", which implies keeping admin role.
+    # We will keep the current role but ensure the profile exists.
+    
+    await db.commit()
+    return {"status": "success", "message": "Seller profile created"}
