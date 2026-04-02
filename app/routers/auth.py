@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.user import User, UserRole
 from app.models.seller import Seller
 from app.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
@@ -110,7 +111,7 @@ async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=401, detail="User found")
+        raise HTTPException(status_code=401, detail="User not found")
 
     access_token = create_access_token({"sub": str(user.id)})
     new_refresh = create_refresh_token({"sub": str(user.id)})
