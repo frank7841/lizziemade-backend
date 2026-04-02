@@ -32,6 +32,7 @@ class ProductCreate(BaseModel):
     materials: list[str] = []
     is_customizable: bool = False
     stock: int = 1
+    images: list[dict] = []
     variants: list[VariantCreate] = []
 
     # New Fields
@@ -47,6 +48,7 @@ class ProductUpdate(BaseModel):
     stock: int | None = None
     is_active: bool | None = None
     tags: list[str] | None = None
+    images: list[dict] | None = None
     is_digital: bool | None = None
     difficulty_level: Optional[DifficultyLevel] = None
     file_url: Optional[str] = None
@@ -152,7 +154,7 @@ async def create_product(
         materials=payload.materials,
         is_customizable=payload.is_customizable,
         stock=payload.stock,
-        images=[],
+        images=payload.images,
         is_digital=payload.is_digital,
         difficulty_level=payload.difficulty_level,
         file_url=payload.file_url,
