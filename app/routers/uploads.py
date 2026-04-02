@@ -25,7 +25,7 @@ async def upload_product_image(
         return result
     except Exception as e:
         logger.error(f"Image upload failed: {e}")
-        raise HTTPException(status_code=500, detail="Image upload failed")
+        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
 
 @router.post("/pattern")
 async def upload_pattern_file(
